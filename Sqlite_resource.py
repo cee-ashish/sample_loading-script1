@@ -43,67 +43,62 @@ class SQLiteLoader:
         """
         session = self.Session()
      
-        # Check if model is a Table object (raw table) or ORM model
-        # if isinstance(model, Table):
-        #     query = session.query(*model.columns)
-        #     print(query, "n")
-        #       # Query Table columns directly
-        # else:
-        query = session.query(model)  # Query ORM model instances
+       
+        query = session.query(model)  
         
 
 
-        # Apply column selection only if model is not a Table object
+       
         if selected_columns_or_path and not isinstance(model, Table):
             query = query.with_entities(*selected_columns_or_path)
 
-        # Apply filters if provided
+       
         if filters:
             query = query.filter(*[model.c[key] == value for key, value in filters.items()])
-        # Apply group by if provided
+        
         if group_by:
             query = query.group_by(*group_by)
 
-        # Apply ordering
+       
         if order_by:
             order_clause = desc(order_by) if order.lower() == "desc" else asc(order_by)
             query = query.order_by(order_clause)
 
-        # Apply limit and offset
+        
         if limit:
             query = query.limit(limit)
         if offset:
             query = query.offset(offset)
 
-        # Return count if requested
+      
         if count:
             return [{"count": query.count()}]
 
-        # Execute query and fetch results
+       
         results = query.all()
 
         session.close()
 
-        # Convert results to dictionary format
+      
         def model_to_dict(row):
             """Converts SQLAlchemy ORM objects and Table row results into dictionaries."""
-            if hasattr(row, "__dict__"):  # ORM model
+            if hasattr(row, "__dict__"):  
                 return {k: v for k, v in row.__dict__.items() if k != "_sa_instance_state"}
-            elif hasattr(row, "_mapping"):  # Raw Table query row
+            elif hasattr(row, "_mapping"): 
                 return dict(row._mapping)
-            else:  # Unexpected format (fallback)
+            else: 
                 return dict(row)
 
         data = [model_to_dict(row) for row in results]
       
-        # Convert Decimal values to float if enabled
+       
         if convert_decimals:
             for row in data:
                 for key, value in row.items():
                     if isinstance(value, Decimal):
                         row[key] = float(value)
 
-        # Remove duplicates if distinct=True
+      
         if distinct:
             seen = set()
             unique_data = []

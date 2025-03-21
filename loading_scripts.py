@@ -10,21 +10,21 @@ from sqlalchemy import MetaData, Table
 
 
 def main():
-    # Define the CSV file path
-    csv_file = "sample_ais_data_with_duplicates (1).csv"  # Update this with your actual file path
+   
+    csv_file = "sample_ais_data_with_duplicates (1).csv"  
     DB_URL = "postgresql://postgres:postgres@localhost:5432/test_db"
     SQLITE_DB_PATH = "sqlite:///sample.sqlite"
     DUCKDB_PATH = "my_database.duckdb"
 
-    engine = sa.create_engine(SQLITE_DB_PATH)
+    engine = sa.create_engine(DB_URL)
 
     metadata = MetaData()
-    # users_table = Table("ship_data", metadata, autoload_with=engine)
+   
 
     metadata.reflect(bind=engine)
-    users_table = metadata.tables.get("ship_data")
-    # # if users_table is None:
-    # #     raise ValueError("Table 'ship_data' does not exist in the database")
+    users_table = metadata.tables.get("ship_tracks")
+    if users_table is None:
+        raise ValueError("Table 'ship_data' does not exist in the database")
 
    
     SessionLocal = sessionmaker(bind=engine)
@@ -37,12 +37,12 @@ def main():
     postgres_resource = PostgresLoader(session=session)
     parquet_resource = ParquetLoader(storage_path="data.parquet")
     
-    data = duckdb_resource.load_data(
+    data = parquet_resource.load_data(
             model=users_table,  # Update with the actual SQLAlchemy model or table reference
-            selected_columns_or_path= None,  # Modify as needed
-            time_bucket=None,  # Modify as needed
-            area_scope=None,  # Modify as needed
-            filters= {"mmsi_no":854636086},  # Modify as needed
+            selected_columns_or_path= None,  
+            time_bucket=None, 
+            area_scope=None,  
+            filters= None,  
             limit=None,
             offset=None,
             order_by=None,
@@ -53,9 +53,9 @@ def main():
             log_statement=False,
             log_sample_values=False,
             pretty_print=False,
-            # logger=None
+            
         )
-    print(f"Total records loaded from PostgreSQL/ Parquet: {len(data)} {data}")
+    print(f"Total records loaded from database: {len(data)} {data}")
 
 if __name__ == "__main__":
     main()

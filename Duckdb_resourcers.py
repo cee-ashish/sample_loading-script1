@@ -8,7 +8,7 @@ class DuckDBLoader:
         Initialize DuckDBLoader with an in-memory or file-based DuckDB instance.
         """
         self.conn = duckdb.connect(database=db_path)
-        self.logger = None  # Define a logger if needed
+        self.logger = None  
     
     def load_data(
         self,
@@ -46,9 +46,9 @@ class DuckDBLoader:
         if filters:
             conditions = []
             for column, value in filters.items():
-                if isinstance(value, list):  # Handle 'IN' queries
+                if isinstance(value, list):  
                     conditions.append(f"{column} IN ({', '.join(map(str, value))})")
-                elif isinstance(value, dict):  # Handle comparison operators
+                elif isinstance(value, dict):  
                     for op, val in value.items():
                         if op == "==":
                             conditions.append(f"{column} = {val}")
@@ -62,7 +62,7 @@ class DuckDBLoader:
                             conditions.append(f"{column} < {val}")
                         elif op == "<=":
                             conditions.append(f"{column} <= {val}")
-                else:  # Default equality check
+                else: 
                     conditions.append(f"{column} = {value}")
 
             query += " WHERE " + " AND ".join(conditions)

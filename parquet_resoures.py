@@ -54,34 +54,34 @@ class ParquetLoader:
     logger=None,
 ) -> List[Dict[str, Any]]:
     
-    # Determine correct file path
+   
         table_path = (
             self.storage_path if os.path.isfile(self.storage_path) 
             else os.path.join(self.storage_path, selected_columns_or_path)
         )
 
-        # Ensure file exists
+       
         if not os.path.exists(table_path):
             print(f"❌ Error: Parquet file '{table_path}' does not exist!")
             return []
 
-        # Load Parquet file
+       
         try:
             df = pq.read_table(table_path).to_pandas()
-             # Debug first few rows
+             
 
             if offset:
                 raise ValueError("OFFSET will not work with parquet system")
-            # Apply filters
+           
             if filters:
                 for column, value in filters.items():
                     if column not in df.columns:
                         raise ValueError(f"Column '{column}' not found in DataFrame")
 
-                    if isinstance(value, list):  # Handle 'IN' queries
+                    if isinstance(value, list):  
                         df = df[df[column].isin(value)]
 
-                    elif isinstance(value, dict):  # Handle comparison operators
+                    elif isinstance(value, dict):  
                         for op, val in value.items():
                             if op == "==":
                                 df = df[df[column] == val]
@@ -98,16 +98,16 @@ class ParquetLoader:
                             else:
                                 raise ValueError(f"Unsupported operator: {op}")
                         return df
-                    else:  # Default equality check
+                    else: 
                         df = df[df[column] == value]
 
-            # Apply time bucketing
+         
             if time_bucket and "timestamp_updated" in df.columns:
                 df["timestamp_updated"] = pd.to_datetime(df["timestamp_updated"])
                 df["time_bucket"] = df["timestamp_updated"].dt.floor(time_bucket)
                 df = df.drop_duplicates(subset=["time_bucket"])
 
-            # Keep only the latest records
+           
             if only_latest:
                 timestamp_column = only_latest["timestamp_column"]
                 latest_on = only_latest["latest_on"]
@@ -118,15 +118,15 @@ class ParquetLoader:
                 else:
                     print(f"⚠ Warning: Columns '{timestamp_column}' or '{latest_on}' not found.")
 
-            # Remove duplicates if distinct=True
+           
             if distinct:
                 df = df.drop_duplicates()
 
-            # Apply sorting
+           
             if order_by:
                 df = df.sort_values(by=order_by, ascending=(order == "asc"))
 
-            # Apply limit
+           
             if limit:
                 df = df.head(limit)
 

@@ -8,7 +8,7 @@ from typing import Any, List, Dict
 class PostgresLoader:
     def __init__(self, session: Session):
         self.session = session
-        self.logger = None  # Define a logger if needed
+        self.logger = None  
 
     def load_data(
         self,
@@ -39,7 +39,7 @@ class PostgresLoader:
         if filters:
             conditions = []
             for key, value in filters.items():
-                conditions.append(model.c[key] == value)  # Use `model.c[key]`
+                conditions.append(model.c[key] == value) 
             if area_scope:
                 conditions.append(model.c.area == area_scope)
             query = query.where(*conditions)
