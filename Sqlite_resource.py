@@ -11,7 +11,7 @@ class SQLiteLoader:
         """
         Initialize SQLiteLoader with an in-memory or file-based SQLite database.
         """
-        self.engine = create_engine(f"sqlite:///{db_path}")
+        self.engine = create_engine(db_path)
         self.Session = sessionmaker(bind=self.engine)
     
     def load_data(
@@ -42,12 +42,16 @@ class SQLiteLoader:
         Load data from an SQLite database with filtering, sorting, and grouping.
         """
         session = self.Session()
-
+     
         # Check if model is a Table object (raw table) or ORM model
-        if isinstance(model, Table):
-            query = session.query(*model.columns)  # Query Table columns directly
-        else:
-            query = session.query(model)  # Query ORM model instances
+        # if isinstance(model, Table):
+        #     query = session.query(*model.columns)
+        #     print(query, "n")
+        #       # Query Table columns directly
+        # else:
+        query = session.query(model)  # Query ORM model instances
+        
+
 
         # Apply column selection only if model is not a Table object
         if selected_columns_or_path and not isinstance(model, Table):
@@ -55,8 +59,7 @@ class SQLiteLoader:
 
         # Apply filters if provided
         if filters:
-            query = query.filter(*filters)
-
+            query = query.filter(*[model.c[key] == value for key, value in filters.items()])
         # Apply group by if provided
         if group_by:
             query = query.group_by(*group_by)
@@ -78,6 +81,7 @@ class SQLiteLoader:
 
         # Execute query and fetch results
         results = query.all()
+
         session.close()
 
         # Convert results to dictionary format
@@ -91,7 +95,7 @@ class SQLiteLoader:
                 return dict(row)
 
         data = [model_to_dict(row) for row in results]
-
+      
         # Convert Decimal values to float if enabled
         if convert_decimals:
             for row in data:

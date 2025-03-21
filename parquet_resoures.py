@@ -68,8 +68,7 @@ class ParquetLoader:
         # Load Parquet file
         try:
             df = pq.read_table(table_path).to_pandas()
-            print(f"✅ Loaded {len(df)} rows from {table_path}")
-            print(df.head())  # Debug first few rows
+             # Debug first few rows
 
             # Apply filters
             if filters:
