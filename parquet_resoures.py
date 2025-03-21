@@ -70,6 +70,8 @@ class ParquetLoader:
             df = pq.read_table(table_path).to_pandas()
              # Debug first few rows
 
+            if offset:
+                raise ValueError("OFFSET will not work with parquet system")
             # Apply filters
             if filters:
                 for column, value in filters.items():
