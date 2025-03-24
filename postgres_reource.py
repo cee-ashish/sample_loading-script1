@@ -13,7 +13,7 @@ class PostgresLoader:
     def load_data(
         self,
         model: Any,
-        selected_columns_or_path: Any,
+        selected_columns_or_path: list[Any],
         time_bucket: Any,
         area_scope: Any,
         filters: Any,
@@ -63,9 +63,9 @@ class PostgresLoader:
         if time_bucket is not None and isinstance(time_bucket, dict):
                 bucket_interval = time_bucket.get("bucket_interval")
                 bucket_timestamp = time_bucket.get("bucket_timestamp")
-                bucket_timestamp_column = model.c[bucket_timestamp]
+                bucket_timestamp_column = getattr(model, bucket_timestamp)
                 distinct_on = time_bucket.get("distinct_column")
-                distinct_on_column = model.c[distinct_on]
+                distinct_on_column = getattr(model, distinct_on)
                 query = query.distinct(
                     sa.func.time_bucket(bucket_interval, bucket_timestamp_column),
                     distinct_on_column,
@@ -80,7 +80,7 @@ class PostgresLoader:
 
         if order_by:
             order_func = sa.asc if order == "asc" else sa.desc
-            query = query.order_by(order_func(getattr(model, order_by)))
+            query = query.order_by(order_func(model.c[order_by]))
 
         if limit:
             query = query.limit(limit)
