@@ -13,7 +13,7 @@ class DuckDBLoader:
     def load_data(
         self,
         model: str,
-        selected_columns_or_path: Any = None,
+        selected_columns_or_path: list[Any] = None,
         time_bucket: Dict[str, Any] = None,
         area_scope: Any = None,
         filters: Any = None,
@@ -73,10 +73,12 @@ class DuckDBLoader:
             query = f"SELECT DISTINCT time_bucket('{bucket_interval}', {bucket_timestamp}) FROM {model}"
         
         if only_latest:
-            timestamp_column = only_latest.get("timestamp_updated")
+            timestamp_column = only_latest.get("timestamp_column")
+            latest_on_column = only_latest.get("latest_on")
+
             query = f"""
                 SELECT * FROM (
-                    SELECT *, ROW_NUMBER() OVER (ORDER BY {timestamp_column} DESC) AS rn
+                    SELECT *, ROW_NUMBER() OVER (PARTITION BY {latest_on_column} ORDER BY {timestamp_column} DESC) AS rn
                     FROM {model}
                 ) WHERE rn = 1
             """

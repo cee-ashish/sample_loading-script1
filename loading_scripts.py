@@ -55,7 +55,7 @@ def main():
             pretty_print=False,
             
         )
-    print(f"Total records loaded from database: {len(data)} {data}")
+    print(f"Total records loaded from database: {len(data)}{data}")
 
 if __name__ == "__main__":
     main()

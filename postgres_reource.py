@@ -36,6 +36,22 @@ class PostgresLoader:
         """
         query = sa.select(model)
 
+        if selected_columns_or_path:
+            query_columns = []
+            for item in selected_columns_or_path:
+                if isinstance(item, str):
+                   
+                    query_columns.append(model.c[item])
+                elif isinstance(item, tuple):
+                    col_name, func = item
+                    column_attr = model.c[col_name]  
+                    query_columns.append(self.apply_function(column_attr, func))
+            
+            # logger.debug(f"Selected columns: {query_columns}")
+            query = sa.select(*query_columns)
+        else:
+            query = sa.select(model)
+
         if filters:
             conditions = []
             for key, value in filters.items():
@@ -44,18 +60,22 @@ class PostgresLoader:
                 conditions.append(model.c.area == area_scope)
             query = query.where(*conditions)
 
-        if time_bucket:
-            query = query.distinct(
-                sa.func.time_bucket(time_bucket, model.timestamp_updated),
-                getattr(model, "mmsi"),
-            )
-
+        if time_bucket is not None and isinstance(time_bucket, dict):
+                bucket_interval = time_bucket.get("bucket_interval")
+                bucket_timestamp = time_bucket.get("bucket_timestamp")
+                bucket_timestamp_column = model.c[bucket_timestamp]
+                distinct_on = time_bucket.get("distinct_column")
+                distinct_on_column = model.c[distinct_on]
+                query = query.distinct(
+                    sa.func.time_bucket(bucket_interval, bucket_timestamp_column),
+                    distinct_on_column,
+                )
         if distinct:
             query = query.distinct()
 
         if only_latest:
-            time_col = getattr(model, only_latest["timestamp_column"])
-            latest_col = getattr(model, only_latest["latest_on"])
+            time_col = model.c[only_latest["timestamp_column"]]
+            latest_col = model.c[only_latest["latest_on"]]
             query = query.distinct(latest_col).order_by(latest_col, sa.desc(time_col))
 
         if order_by:

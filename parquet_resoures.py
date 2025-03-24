@@ -59,7 +59,7 @@ class ParquetLoader:
             self.storage_path if os.path.isfile(self.storage_path) 
             else os.path.join(self.storage_path, selected_columns_or_path)
         )
-
+        print("parquet")
        
         if not os.path.exists(table_path):
             print(f"❌ Error: Parquet file '{table_path}' does not exist!")
@@ -103,9 +103,15 @@ class ParquetLoader:
 
          
             if time_bucket and "timestamp_updated" in df.columns:
+    
                 df["timestamp_updated"] = pd.to_datetime(df["timestamp_updated"])
-                df["time_bucket"] = df["timestamp_updated"].dt.floor(time_bucket)
-                df = df.drop_duplicates(subset=["time_bucket"])
+
+                bucket_interval = time_bucket.get("bucket_interval")  
+                bucket_timestamp = time_bucket.get("bucket_timestamp")
+                distinct_column = time_bucket.get("distinct_column")
+
+                df["time_bucket"] = df[bucket_timestamp].dt.floor(bucket_interval)
+                df = df.drop_duplicates(subset=["time_bucket", distinct_column])[[distinct_column]]
 
            
             if only_latest:
