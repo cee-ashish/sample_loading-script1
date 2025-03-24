@@ -19,6 +19,7 @@ class DuckDBLoader:
         filters: dict = None,
         limit: int = None,
         offset: int = None,
+        group_by: List[str] = None,
         order_by: str = None,
         order: str = "asc",
         distinct: bool = False,
@@ -92,6 +93,21 @@ class DuckDBLoader:
         if distinct:
             query = query.replace("SELECT *", "SELECT DISTINCT *")
         
+        if group_by:
+            group_by_clause = ", ".join(group_by)
+
+           
+            result = self.conn.execute(f"PRAGMA table_info('ship_data')").fetchall()
+            all_columns = [row[1] for row in result]  
+            updated_columns = [
+                col if col in group_by else f"ANY_VALUE({col}) AS {col}"
+                for col in all_columns
+            ]
+            
+            query = f"SELECT {', '.join(updated_columns)} FROM ship_data GROUP BY {group_by_clause}"
+
+
+
         if order_by:
             order_clause = "DESC" if order.lower() == "desc" else "ASC"
             query += f" ORDER BY {order_by} {order_clause}"

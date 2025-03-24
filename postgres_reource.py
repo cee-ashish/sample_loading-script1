@@ -23,6 +23,7 @@ class PostgresLoader:
         order: str = "asc",  
         distinct: bool = False,
         only_latest: dict = None,
+        group_by: List[str] = None,
         log_statement: bool = (
             os.getenv("LOG_SQL_STATEMENTS", "False").lower() == "true"
         ),
@@ -80,6 +81,9 @@ class PostgresLoader:
         if order_by:
             order_func = sa.asc if order == "asc" else sa.desc
             query = query.order_by(order_func(model.c[order_by]))
+
+        if group_by:
+            query = query.group_by(*[model.c[col] for col in group_by])
 
         if limit:
             query = query.limit(limit)

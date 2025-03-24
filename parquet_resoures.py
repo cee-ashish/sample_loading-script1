@@ -40,6 +40,7 @@ class ParquetLoader:
     selected_columns_or_path: Any,
     time_bucket: Any = None,
     area_scope: Any = None,
+    group_by: List[str] = None,
     filters: dict = None,
     limit: int = None,
     offset: int = None,
@@ -127,7 +128,9 @@ class ParquetLoader:
             if distinct:
                 df = df.drop_duplicates()
 
-           
+            if group_by:
+                df = df.groupby(group_by, as_index=False).agg(lambda x: x.iloc[0]) 
+
             if order_by:
                 df = df.sort_values(by=order_by, ascending=(order == "asc"))
 

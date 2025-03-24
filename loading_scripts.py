@@ -16,13 +16,13 @@ def main():
     SQLITE_DB_PATH = "sqlite:///sample.sqlite"
     DUCKDB_PATH = "my_database.duckdb"
 
-    engine = sa.create_engine(DB_URL)
+    engine = sa.create_engine(SQLITE_DB_PATH)
 
     metadata = MetaData()
    
 
     metadata.reflect(bind=engine)
-    users_table = metadata.tables.get("ship_tracks")
+    users_table = metadata.tables.get("ship_data")
     if users_table is None:
         raise ValueError("Table 'ship_data' does not exist in the database")
 
@@ -37,13 +37,11 @@ def main():
     postgres_resource = PostgresLoader(session=session)
     parquet_resource = ParquetLoader(storage_path="data.parquet")
     
-    data = postgres_resource.load_data(
+    data = sqlite_resource.load_data(
             model=users_table,  # Update with the actual SQLAlchemy model or table reference
             selected_columns_or_path= None,  
             time_bucket= None, 
-            # {"bucket_interval": "1 hour",
-            #               "bucket_timestamp":"timestamp_updated",
-            #               "distinct_column": "mmsi_no"} 
+            group_by = None,
             area_scope=None,
             filters= None,  
             limit= None,
