@@ -40,7 +40,7 @@ class ParquetLoader:
     selected_columns_or_path: Any,
     time_bucket: Any = None,
     area_scope: Any = None,
-    filters: Any = None,
+    filters: dict = None,
     limit: int = None,
     offset: int = None,
     order_by: str = None,

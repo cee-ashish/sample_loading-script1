@@ -16,7 +16,7 @@ class DuckDBLoader:
         selected_columns_or_path: list[Any] = None,
         time_bucket: Dict[str, Any] = None,
         area_scope: Any = None,
-        filters: Any = None,
+        filters: dict = None,
         limit: int = None,
         offset: int = None,
         order_by: str = None,
