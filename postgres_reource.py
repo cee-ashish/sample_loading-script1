@@ -47,7 +47,7 @@ class PostgresLoader:
                     column_attr = model.c[col_name]  
                     query_columns.append(self.apply_function(column_attr, func))
             
-            # logger.debug(f"Selected columns: {query_columns}")
+            
             query = sa.select(*query_columns)
         else:
             query = sa.select(model)

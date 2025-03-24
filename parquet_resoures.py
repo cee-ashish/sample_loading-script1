@@ -13,26 +13,7 @@ class ParquetLoader:
     def __init__(self, storage_path: str):
         self.storage_path = storage_path
         self.logger = None  
-    def _jsonlogic_to_pyarrow_filters(self, logic: Dict) -> List[Tuple[str, str, Any]]:
-        """Convert jsonlogic rules to pyarrow filter tuples."""
-        filters = []
-
-        def parse_logic(logic):
-            for operator, operands in logic.items():
-                if operator in ["and", "or"]:
-                    for operand in operands:
-                        parse_logic(operand)
-                else:
-                    column = operands[0]["var"]
-                    value = operands[1]
-                    # Convert string to pyarrow timestamp if necessary
-                    if isinstance(value, str) and column == "timestamp_updated":
-                        value = maya.parse(value).datetime()
-                        value = pa.scalar(value, type=pa.timestamp("us", tz="UTC"))
-                    filters.append((column, operator, value))
-
-        parse_logic(logic)
-        return filters
+    
 
     def load_data(
     self,

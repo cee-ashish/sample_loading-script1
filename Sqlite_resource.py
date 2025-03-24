@@ -43,24 +43,23 @@ class SQLiteLoader:
         session = self.Session()
         query = session.query(model)  
 
-        # Apply selected columns
+   
         if selected_columns_or_path:
-    # Ensure selected_columns_or_path contains SQLAlchemy column objects
             selected_columns = [
                 getattr(model.c, col) if isinstance(model, Table) else getattr(model, col)
                 for col in selected_columns_or_path
             ]
             query = query.with_entities(*selected_columns)
 
-        # Apply filters
+   
         if filters:
             query = query.filter(*[model.c[key] == value for key, value in filters.items()])
         
-        # Apply group by
+   
         if group_by:
             query = query.group_by(*group_by)
 
-        # Apply ordering
+        
         if order_by:
             order_clause = desc(order_by) if order.lower() == "desc" else asc(order_by)
             query = query.order_by(order_clause)
@@ -71,15 +70,15 @@ class SQLiteLoader:
         if offset:
             query = query.offset(offset)
 
-        # ✅ Apply "only_latest" logic (Latest record per unique `latest_on`)
+
         if only_latest:
-            timestamp_column = only_latest.get("timestamp_column")  # e.g., "timestamp_updated"
-            latest_on_column = only_latest.get("latest_on")  # e.g., "mmsi_no"
+            timestamp_column = only_latest.get("timestamp_column") 
+            latest_on_column = only_latest.get("latest_on") 
 
             if timestamp_column and latest_on_column:
                 subquery = (
                     select(
-                        model,  # Select all columns
+                        model,  
                         func.row_number().over(
                             partition_by=model.c[latest_on_column], 
                             order_by=model.c[timestamp_column].desc()
@@ -111,11 +110,11 @@ class SQLiteLoader:
            
             query = session.query(distinct_column_ref).distinct(distinct_column_ref)
 
-        # Execute query
+       
         results = query.all()
         session.close()
 
-        # Convert results to dictionary
+        
         def model_to_dict(row):
             """Converts SQLAlchemy ORM objects and Table row results into dictionaries."""
             if hasattr(row, "__dict__"):  
@@ -127,14 +126,14 @@ class SQLiteLoader:
 
         data = [model_to_dict(row) for row in results]
 
-        # Convert Decimal to float
+        
         if convert_decimals:
             for row in data:
                 for key, value in row.items():
                     if isinstance(value, Decimal):
                         row[key] = float(value)
 
-        # Apply distinct manually
+       
         if distinct:
             seen = set()
             unique_data = []
