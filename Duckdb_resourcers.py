@@ -68,9 +68,16 @@ class DuckDBLoader:
             query += " WHERE " + " AND ".join(conditions)
         
         if time_bucket:
-            bucket_interval = time_bucket.get("bucket_interval")
-            bucket_timestamp = time_bucket.get("bucket_timestamp")
-            query = f"SELECT DISTINCT time_bucket('{bucket_interval}', {bucket_timestamp}) FROM {model}"
+            bucket_interval = time_bucket.get("bucket_interval")  # Example: "1 hour"
+            bucket_timestamp = time_bucket.get("bucket_timestamp")  # Example: "timestamp_updated"
+            distinct_column = time_bucket.get("distinct_column")  # Example: "mmsi_no"
+
+            query = f"""
+                SELECT DISTINCT 
+                    time_bucket(INTERVAL '{bucket_interval}', CAST({bucket_timestamp} AS TIMESTAMP)) AS time_bucket,
+                    {distinct_column}
+                FROM {model}
+            """
         
         if only_latest:
             timestamp_column = only_latest.get("timestamp_column")

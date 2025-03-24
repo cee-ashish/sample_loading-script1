@@ -7,6 +7,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Table
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import over
+import sqlalchemy as sa
+import re
 
 class SQLiteLoader:
     def __init__(self, db_path: str = ":memory:"):
@@ -19,7 +21,7 @@ class SQLiteLoader:
     def load_data(
     self,
     model: Any,
-    filters: Any = None,
+    filters: dict = None,
     area_scope: Any = None,
     selected_columns_or_path: list[Any] = None,
     limit: int = None,
@@ -90,11 +92,29 @@ class SQLiteLoader:
                     ).alias("subq")
                 )
 
-                query = session.query(subquery).filter(subquery.c.rn == 1)  # Keep only latest rows
+                query = session.query(subquery).filter(subquery.c.rn == 1)  
 
-        # Apply count
-        if count:
-            return [{"count": query.count()}]
+        if time_bucket is not None and isinstance(time_bucket, dict):
+            bucket_interval = time_bucket.get("bucket_interval")  
+            bucket_timestamp = time_bucket.get("bucket_timestamp")
+            distinct_column = time_bucket.get("distinct_column")
+
+           
+            bucket_timestamp_column = model.c[bucket_timestamp]
+            distinct_column_ref = model.c[distinct_column]
+
+        
+            match = re.match(r"(\d+) hour", bucket_interval)
+            hours = int(match.group(1)) if match else 1 
+
+           
+            bucket_expr = sa.func.strftime(
+                "%Y-%m-%d %H:00:00",
+                sa.func.datetime(bucket_timestamp_column, f"-{hours - 1} hours")
+            ).label("time_bucket")
+
+           
+            query = session.query(distinct_column_ref).distinct(distinct_column_ref)
 
         # Execute query
         results = query.all()
