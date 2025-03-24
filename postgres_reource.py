@@ -23,7 +23,6 @@ class PostgresLoader:
         order: str = "asc",  
         distinct: bool = False,
         only_latest: dict = None,
-        convert_decimals: bool = True,
         log_statement: bool = (
             os.getenv("LOG_SQL_STATEMENTS", "False").lower() == "true"
         ),

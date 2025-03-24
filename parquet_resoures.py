@@ -47,7 +47,6 @@ class ParquetLoader:
     order: str = "asc",
     distinct: bool = False,
     only_latest: dict = None,
-    convert_decimals: bool = True,
     log_statement: bool = False,
     log_sample_values: bool = False,
     pretty_print: bool = True,

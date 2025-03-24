@@ -23,7 +23,6 @@ class DuckDBLoader:
         order: str = "asc",
         distinct: bool = False,
         only_latest: Dict[str, str] = None,
-        convert_decimals: bool = True,
         log_statement: bool = False,
         log_sample_values: bool = False,
         pretty_print: bool = True,

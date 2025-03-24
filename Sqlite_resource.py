@@ -30,17 +30,12 @@ class SQLiteLoader:
     order: str = "asc",
     convert_decimals: bool = True,
     offset: int = None,
-    interval: str = None,
-    uniq_trk_id: str = None,
     distinct: bool = False,
-    count: bool = False,
     time_bucket: dict = None,
     only_latest: dict = None,
-    distinct_on: List[str] = None,
     log_statement: bool = False,
     log_sample_values: bool = False,
     pretty_print: bool = True,
-    logger: bool = False,
 ) -> List[Dict[str, Any]]:
         """
         Load data from an SQLite database with filtering, sorting, and grouping.

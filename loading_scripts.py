@@ -37,19 +37,21 @@ def main():
     postgres_resource = PostgresLoader(session=session)
     parquet_resource = ParquetLoader(storage_path="data.parquet")
     
-    data = parquet_resource.load_data(
+    data = postgres_resource.load_data(
             model=users_table,  # Update with the actual SQLAlchemy model or table reference
             selected_columns_or_path= None,  
-            time_bucket=None, 
-            area_scope=None,  
+            time_bucket= None, 
+            # {"bucket_interval": "1 hour",
+            #               "bucket_timestamp":"timestamp_updated",
+            #               "distinct_column": "mmsi_no"} 
+            area_scope=None,
             filters= None,  
-            limit=None,
+            limit= None,
             offset=None,
             order_by=None,
             order=None,
             distinct=None,
             only_latest=None,
-            convert_decimals=False,
             log_statement=False,
             log_sample_values=False,
             pretty_print=False,
