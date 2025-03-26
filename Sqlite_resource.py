@@ -9,6 +9,9 @@ from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import over
 import sqlalchemy as sa
 import re
+from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.orm import Session
+from datetime import datetime
 
 class SQLiteLoader:
     def __init__(self, db_path: str = ":memory:"):
@@ -145,3 +148,40 @@ class SQLiteLoader:
             return unique_data
 
         return data
+
+
+    def upsert_data(self, model, data, id_fields, unique_fields, no_update_cols, return_counts):
+        if not data:
+            return {"success": False, "message": "No data provided", "inserted_rows": 0, "updated_rows": 0}
+
+        try:
+      
+            for record in data:
+                if isinstance(record["timestamp_updated"], str):
+                    record["timestamp_updated"] = datetime.strptime(record["timestamp_updated"], "%Y-%m-%d %H:%M:%S")
+
+            
+            update_cols = [
+                c.name for c in model.columns
+                if c.name not in id_fields and c.name not in no_update_cols
+            ]
+
+        
+            stmt = insert(model).on_conflict_do_update(
+                index_elements=id_fields,  
+                set_={
+                    col: getattr(insert(model).excluded, col) 
+                    for col in update_cols
+                },
+                where=(insert(model).excluded.timestamp_updated > model.c.timestamp_updated)  
+            )
+
+            with self.Session() as session:
+                with session.begin():
+                    result = session.execute(stmt, data)
+                    session.commit()
+
+            return {"success": True, "message": "Upsert successful", "inserted_rows": result.rowcount, "updated_rows": result.rowcount}
+
+        except Exception as e:
+            return {"success": False, "message": str(e), "inserted_rows": 0, "updated_rows": 0}
