@@ -1,7 +1,7 @@
 import duckdb
 import pandas as pd
 from typing import Any, List, Dict
-
+from datetime import datetime
 class DuckDBLoader:
     def __init__(self, db_path: str = ":memory:"):
         """
@@ -127,3 +127,76 @@ class DuckDBLoader:
         except Exception as e:
             print(f"Error executing query: {query}, Error: {str(e)}")
             raise
+    
+
+    def upsert_data(self, table_name, data, id_fields, unique_fields, no_update_cols=None, return_counts=False):
+        """
+        Upserts data into DuckDB table with an additional check for unique fields.
+
+        :param table_name: Name of the table
+        :param data: List of dictionaries containing the data to insert or update
+        :param id_fields: List of column names that act as unique identifiers
+        :param unique_fields: Additional unique constraints
+        :param no_update_cols: List of column names that should not be updated
+        :param return_counts: Boolean, whether to return the number of inserted and updated rows
+        :return: Dictionary with success status and counts of inserted/updated rows
+        """
+        if not data:
+            return {"success": False, "message": "No data provided", "inserted_rows": 0, "updated_rows": 0}
+
+        if no_update_cols is None:
+            no_update_cols = []
+
+        try:
+           
+            for record in data:
+                if isinstance(record["timestamp_updated"], str):
+                    record["timestamp_updated"] = datetime.fromisoformat(record["timestamp_updated"])
+
+          
+            existing_records = {}
+            cursor = self.conn.cursor()
+
+            for record in data:
+                unique_filter = " AND ".join([f"{col} = ?" for col in unique_fields])
+                query = f"SELECT *, timestamp_updated FROM {table_name} WHERE {unique_filter}"
+                result = cursor.execute(query, [record[col] for col in unique_fields]).fetchall()
+
+                if result:
+                    existing_timestamp = result[0][-1]  
+
+                    if isinstance(existing_timestamp, str):
+                        existing_timestamp = datetime.fromisoformat(existing_timestamp)
+
+                    existing_records[tuple(record[col] for col in unique_fields)] = (result[0], existing_timestamp)
+
+            final_data = []
+            for record in data:
+                existing_record = existing_records.get(tuple(record[col] for col in unique_fields))
+
+                if existing_record:
+                    existing_timestamp = existing_record[1]
+
+                    
+                    if record["timestamp_updated"] > existing_timestamp:
+                        final_data.append(record)
+                else:
+                    final_data.append(record)  
+
+            if not final_data:
+                return {"success": True, "message": "No updates needed", "inserted_rows": 0, "updated_rows": 0}
+
+            update_cols = [col for col in data[0].keys() if col not in id_fields and col not in no_update_cols]
+
+           
+            placeholders = ", ".join(["?"] * len(final_data[0]))
+            columns = ", ".join(final_data[0].keys())
+            query = f"INSERT OR REPLACE INTO {table_name} ({columns}) VALUES ({placeholders})"
+
+            with self.conn:
+                cursor.executemany(query, [tuple(record.values()) for record in final_data])
+
+            return {"success": True, "inserted_rows": len(final_data), "updated_rows": len(final_data)}
+
+        except Exception as e:
+            return {"success": False, "message": str(e), "inserted_rows": 0, "updated_rows": 0}

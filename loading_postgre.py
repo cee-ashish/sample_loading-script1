@@ -15,7 +15,7 @@ import pandas as pd
 
 
 
-csv_file = "sample_ais_data_with_duplicates (1).csv"        
+csv_file = "ship_data.csv"        
 parquet_file = "data.parquet"  
 
 

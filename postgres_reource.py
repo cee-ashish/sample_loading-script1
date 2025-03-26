@@ -4,6 +4,11 @@ import pyarrow.parquet as pq
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from typing import Any, List, Dict
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
+from datetime import datetime
+
 
 class PostgresLoader:
     def __init__(self, session: Session):
@@ -94,4 +99,96 @@ class PostgresLoader:
         result_set = self.session.execute(query).mappings().all()
         return [dict(row) for row in result_set]
 
+    def upsert_data(self, model, data, id_fields, unique_fields, no_update_cols=None, return_counts=False):
+        """
+        Upserts data into PostgreSQL table with an additional check for unique fields.
+
+        """
+        if not data:
+            return {"success": False, "message": "No data provided", "inserted_rows": 0, "updated_rows": 0}
+
+        if no_update_cols is None:
+            no_update_cols = []
+
+        try:
+            
+            for record in data:
+                if isinstance(record["timestamp_updated"], str):
+                    record["timestamp_updated"] = datetime.fromisoformat(record["timestamp_updated"])
+
+           
+            index_cols = [model.c[field] for field in id_fields + unique_fields]
+
+            latest_records = {}
+            for record in data:
+                record_key = tuple(str(record[col]) for col in id_fields + unique_fields)
+                if (
+                    record_key not in latest_records or
+                    record["timestamp_updated"] > latest_records[record_key]["timestamp_updated"]
+                ):
+                    latest_records[record_key] = record
+
+            data = list(latest_records.values())
+
+            update_cols = [
+                c.name for c in model.columns
+                if c.name not in id_fields and c.name not in no_update_cols
+            ]
+
+           
+            existing_records = {
+                tuple(getattr(row, col) for col in unique_fields): row
+                for row in self.session.query(model).filter(
+                    or_(*[and_(*(model.c[col] == record[col] for col in unique_fields)) for record in data])
+                ).all()
+            }
+
+            final_data = []
+            for record in data:
+                existing_record = existing_records.get(tuple(record[col] for col in unique_fields))
+
+                if existing_record:
+                 
+                    if record["timestamp_updated"] > existing_record.timestamp_updated:
+                        final_data.append(record)
+                else:
+                   
+                    final_data.append(record)
+
+            if not final_data:
+                return {"success": True, "message": "No updates needed", "inserted_rows": 0, "updated_rows": 0}
+
+            stmt = insert(model).on_conflict_do_update(
+                index_elements=id_fields + unique_fields,  
+                set_={col: getattr(insert(model).excluded, col) for col in update_cols},
+                where=(model.c.timestamp_updated < getattr(insert(model).excluded, "timestamp_updated")),
+            )
+
+            inserted_rows, updated_rows = 0, 0
+
+            with self.session.begin():
+                if return_counts:
+                    existing_rows_before = self.session.query(model).filter(
+                        or_(*[
+                            and_(*(model.c[id_field] == str(record[id_field]) for id_field in id_fields))
+                            for record in final_data
+                        ])
+                    ).count()
+
+                self.session.execute(stmt, final_data)
+
+                if return_counts:
+                    existing_rows_after = self.session.query(model).filter(
+                        or_(*[
+                            and_(*(model.c[id_field] == str(record[id_field]) for id_field in id_fields))
+                            for record in final_data
+                        ])
+                    ).count()
+
+                    inserted_rows = existing_rows_after - existing_rows_before
+                    updated_rows = len(final_data) - inserted_rows
+
+            return {"success": True, "inserted_rows": inserted_rows, "updated_rows": updated_rows}
+        except Exception as e:
+            return {"success": False, "message": str(e), "inserted_rows": 0, "updated_rows": 0}
 
