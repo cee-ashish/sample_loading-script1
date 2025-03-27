@@ -16,13 +16,13 @@ def main():
     SQLITE_DB_PATH = "sqlite:///sample.sqlite"
     DUCKDB_PATH = "my_database.duckdb"
 
-    engine = sa.create_engine(DB_URL)
+    engine = sa.create_engine(SQLITE_DB_PATH)
 
     metadata = MetaData()
    
 
     metadata.reflect(bind=engine)
-    users_table = metadata.tables.get("ship_tracks")
+    users_table = metadata.tables.get("ship_data")
     if users_table is None:
         raise ValueError("Table 'ship_data' does not exist in the database")
 
@@ -37,45 +37,45 @@ def main():
     postgres_resource = PostgresLoader(session=session)
     parquet_resource = ParquetLoader(storage_path="data.parquet")
     
-    data = duckdb_resource.load_data(
-            model=users_table,  # Update with the actual SQLAlchemy model or table reference
-            selected_columns_or_path= None,  
-            time_bucket= None, 
-            group_by = None,
-            area_scope=None,
-            filters= None,  
-            limit= None,
-            offset=None,
-            order_by=None,
-            order=None,
-            distinct=None,
-            only_latest=None,
-            log_statement=False,
-            log_sample_values=False,
-            pretty_print=False,
+    # data = duckdb_resource.load_data(
+    #         model=users_table,  # Update with the actual SQLAlchemy model or table reference
+    #         selected_columns_or_path= None,  
+    #         time_bucket= None, 
+    #         group_by = None,
+    #         area_scope=None,
+    #         filters= None,  
+    #         limit= None,
+    #         offset=None,
+    #         order_by=None,
+    #         order=None,
+    #         distinct=None,
+    #         only_latest=None,
+    #         log_statement=False,
+    #         log_sample_values=False,
+    #         pretty_print=False,
             
-        )
-    print(f"Total records loaded from database: {len(data)}{data}")
+    #     )
+    # print(f"Total records loaded from database: {len(data)}{data}")
 
     data = [
-        { "id": 811,
-    "trackname": "Vessel A",
-    "latitude": 9.017601117281243,
-    "longitude": -164.20747226465468,
-    "course": 355.3257932654318,
-    "speed": 3.5168679594234726,
-    "height_depth": 14.86946835309863,
-    "mmsi_no": 564383546,
-    "imo": 6878518,
-    "cargo_type": "Bulk",
-    "length": 326,
-    "width": 18,
-    "name": "Explorer",
-    "timestamp_updated": "2024-01-01 00:00:00"}
+        { "id": 1221,
+    "trackname": "Vessel djA",
+    "latitude": 9.017601117281212243,
+    "longitude": -164.2074722646541268,
+    "course": 355.325793265431812,
+    "speed": 3.516867959423472612,
+    "height_depth": 14.869468353124309863,
+    "mmsi_no": 1234512,
+    "imo": 687851821,
+    "cargo_type": "Bulk_",
+    "length": 32612,
+    "width": 181,
+    "name": "Expl23orer",
+    "timestamp_updated": "2025-01-01 00:00:00"}
     ]
 
     
-    result = duckdb_resource.upsert_data("ship_data", data, id_fields=["id"], unique_fields=["mmsi_no"], no_update_cols = ["trackname"], return_counts=True)
+    result = parquet_resource.upsert_data("/home/root1/AshishSherawat/sample_scripts/data.parquet", data, id_fields=["id"], unique_fields=None, no_update_cols = None, return_counts=True)
     print(result)
 
 
